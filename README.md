@@ -9,15 +9,29 @@ No install, no build step, no account. It's plain HTML/JS — open the file and 
 
 ## Run it
 
+**Without AI** (drawing, image import, animation, export — fully offline):
+
 ```bash
-# from the project folder, any one of these:
 python3 -m http.server 8000      # then open http://localhost:8000
 # ...or just double-click index.html in your browser
 ```
 
-A server is recommended (some browsers restrict `file://`), but the app is
-designed to work either way, and it autosaves your project to the browser's
-local storage.
+**With AI** (adds prompt → art and sprite → variations). Needs Node 18+ and an
+OpenAI API key:
+
+```bash
+OPENAI_API_KEY=sk-... node server/ai-server.js
+# then open http://localhost:8000
+```
+
+The same server also serves the app, so one command runs everything. Your work
+autosaves to the browser's local storage.
+
+## Keyboard shortcuts
+
+`B` pencil · `E` eraser · `G` fill · `I` pick · `L` line · `R` rect · `X` mirror
+· `[` / `]` previous / next frame · `Space` play/stop · `Ctrl/⌘+Z` undo ·
+`Ctrl/⌘+Shift+Z` redo.
 
 ## What it does today
 
@@ -28,6 +42,11 @@ local storage.
   (resize, brightness/contrast, optional Floyd–Steinberg dithering). This is the
   offline "translate an input image to pixel information" engine — it needs no
   API key.
+- **Generate with AI** (optional) — type a prompt (or use your current sprite as
+  a reference) and the local proxy calls OpenAI's `gpt-image-1`; click any
+  result to drop it straight into the pixel converter. Off unless you run the
+  server with a key — see *Run it*.
+- **Undo / redo** — full history, plus keyboard shortcuts (below).
 - **Animation** — a frame timeline with playback preview and FPS control, plus
   **suggestions** that build an animation from one drawn pose: *idle bob, sway,
   walk step, ping-pong, flip*.
@@ -71,34 +90,30 @@ js/export.js      pack frames into the 128x128 sheet -> __gfx__ / PNG / hex
 js/app.js         wires the UI to everything; autosave
 ```
 
+## How the generative AI works
+
+Provider: **OpenAI `gpt-image-1`** (chosen because one key covers both
+text→image and image-guided edits, it handles clean stylized subjects that
+downscale well, and it's simple to proxy). Override with `CRE8_IMAGE_MODEL` if
+you want a different OpenAI image model.
+
+Flow:
+
+```
+prompt (+ optional current sprite as reference)
+   -> server/ai-server.js  (holds OPENAI_API_KEY, calls the model)
+   -> PNG result
+   -> Importer.convert()    (resize + quantise to the 16 PICO-8 colours)
+   -> a PICO-8 frame you can edit
+```
+
+The key never reaches the browser — the proxy keeps it server-side. Whatever the
+model returns is always run through `Importer.convert`, so the output is always
+legal PICO-8 pixels. Files: `server/ai-server.js` (proxy + static host) and
+`js/ai.js` (client).
+
 ## Roadmap
 
 - Tile / map editor (paint a tilemap, export the `__map__` section).
-- Undo/redo history.
 - Save/load project files (`.json`) and full `.p8` import.
-- **Generative AI** — see below.
-
-## Adding generative AI (extension point)
-
-Today's image conversion is fully algorithmic and offline. To go further —
-"generate a character from a text prompt" or "imagine 8 walk frames from this
-one drawing" — you plug in an image-generation model. That step needs an
-external service and an API key, which is a decision (cost, which provider)
-rather than something bundled in.
-
-The integration point is intentionally small: produce an `HTMLImageElement` (or
-raw RGBA), then hand it to the existing pipeline, which already turns any image
-into PICO-8 pixels:
-
-```js
-// pseudo-code for a future js/ai.js
-async function generate(promptOrImage) {
-  const img = await callYourImageModel(promptOrImage); // returns an Image
-  const frame = Importer.convert(img, project.w, project.h, { dither: true });
-  project.frames[project.active] = frame;
-}
-```
-
-So the algorithmic converter (`Importer.convert`) is also the "last mile" for
-any generative backend — whatever creates the picture, this is what makes it
-PICO-8-legal. Tell me which provider you'd like and I'll wire it in.
+- AI-driven animation (generate a set of pose frames from one sprite).

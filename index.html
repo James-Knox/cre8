@@ -80,6 +80,21 @@
         </div>
       </section>
 
+      <section class="card" id="aiCard">
+        <h2>Generate with AI <span id="aiBadge" class="badge off">off</span></h2>
+        <textarea id="aiPrompt" class="ai-prompt" rows="2"
+          placeholder="e.g. a brave knight facing forward, simple flat colours, bold outline"></textarea>
+        <label class="chk"><input type="checkbox" id="aiRefChk" /> Use current sprite as reference</label>
+        <div class="row">
+          <label class="fps">Results
+            <input type="number" id="aiCount" min="1" max="4" value="2" />
+          </label>
+          <button class="btn" id="aiGenBtn" disabled>Generate</button>
+        </div>
+        <div class="ai-results" id="aiResults"></div>
+        <p class="tiny" id="aiStatus">Checking AI availability…</p>
+      </section>
+
       <section class="card">
         <h2>Import image → pixels</h2>
         <input type="file" id="imgInput" accept="image/*" />
@@ -124,6 +139,17 @@
       </section>
 
       <section class="card help">
+        <h2>Shortcuts</h2>
+        <p class="tiny">
+          <kbd>B</kbd> pencil · <kbd>E</kbd> eraser · <kbd>G</kbd> fill ·
+          <kbd>I</kbd> pick · <kbd>L</kbd> line · <kbd>R</kbd> rect ·
+          <kbd>X</kbd> mirror · <kbd>[</kbd>/<kbd>]</kbd> frames ·
+          <kbd>Space</kbd> play · <kbd>Ctrl/⌘+Z</kbd> undo ·
+          <kbd>Shift</kbd> to redo
+        </p>
+      </section>
+
+      <section class="card help">
         <h2>How PICO-8 art works</h2>
         <p class="tiny">
           PICO-8 stores all sprites in one <b>128×128</b> sheet of 256 tiles
@@ -152,6 +178,7 @@
   <script src="js/importer.js"></script>
   <script src="js/animation.js"></script>
   <script src="js/export.js"></script>
+  <script src="js/ai.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

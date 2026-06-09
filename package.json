@@ -1,0 +1,12 @@
+{
+  "name": "cre8",
+  "version": "0.1.0",
+  "description": "A browser-based PICO-8 art studio: sprite editor, image-to-pixel conversion, animation, AI generation, and .p8 export.",
+  "scripts": {
+    "start": "node server/ai-server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}
