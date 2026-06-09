@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>cre8 — PICO-8 art studio</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>cre8 <span class="sub">PICO-8 art studio</span></h1>
+    <div class="topbar-controls">
+      <label>Sprite size
+        <select id="sizeSelect">
+          <option value="8">8 × 8 (1 sprite)</option>
+          <option value="16" selected>16 × 16 (2×2)</option>
+          <option value="32">32 × 32 (4×4)</option>
+          <option value="64">64 × 64 (8×8)</option>
+        </select>
+      </label>
+      <button id="newBtn" class="btn">New</button>
+      <label class="chk"><input type="checkbox" id="mirrorChk" /> Mirror X</label>
+      <label class="chk"><input type="checkbox" id="gridChk" checked /> Grid</label>
+      <label class="chk"><input type="checkbox" id="onionChk" /> Onion skin</label>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Left: tools + palette -->
+    <aside class="tools">
+      <div class="tool-grid" id="toolGrid">
+        <button class="tool active" data-tool="pencil" title="Pencil">✏️</button>
+        <button class="tool" data-tool="eraser" title="Eraser">🧽</button>
+        <button class="tool" data-tool="fill" title="Fill">🪣</button>
+        <button class="tool" data-tool="eyedropper" title="Pick colour">💧</button>
+        <button class="tool" data-tool="line" title="Line">／</button>
+        <button class="tool" data-tool="rect" title="Rectangle">▭</button>
+        <button class="tool" data-tool="rectfill" title="Filled rectangle">▬</button>
+      </div>
+
+      <div class="palette" id="palette"></div>
+      <div class="current-swatch">
+        <span>Colour</span>
+        <div id="currentSwatch" class="swatch-big"></div>
+        <span id="currentName" class="swatch-name"></span>
+      </div>
+    </aside>
+
+    <!-- Centre: canvas -->
+    <section class="stage">
+      <canvas id="editor" class="editor-canvas"></canvas>
+      <p class="hint" id="hint">Draw with the pencil, or import a reference image on the right →</p>
+    </section>
+
+    <!-- Right: frames, import, animate, export, help -->
+    <aside class="panel">
+      <section class="card">
+        <h2>Frames</h2>
+        <div class="frames" id="framesStrip"></div>
+        <div class="row">
+          <button class="btn" id="addFrameBtn">+ Frame</button>
+          <button class="btn" id="dupFrameBtn">Duplicate</button>
+          <button class="btn danger" id="delFrameBtn">Delete</button>
+        </div>
+        <div class="row">
+          <button class="btn" id="prevFrameBtn">◀</button>
+          <span id="frameLabel" class="frame-label">1 / 1</span>
+          <button class="btn" id="nextFrameBtn">▶</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Preview</h2>
+        <canvas id="preview" class="preview-canvas" width="160" height="160"></canvas>
+        <div class="row">
+          <button class="btn" id="playBtn">▶ Play</button>
+          <label class="fps">FPS
+            <input type="number" id="fpsInput" min="1" max="30" value="6" />
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Import image → pixels</h2>
+        <input type="file" id="imgInput" accept="image/*" />
+        <label class="rng">Fit
+          <select id="fitSelect">
+            <option value="contain" selected>Contain (whole image)</option>
+            <option value="cover">Cover (fill, crop)</option>
+            <option value="stretch">Stretch</option>
+            <option value="pixel">Pixel (no smoothing)</option>
+          </select>
+        </label>
+        <label class="rng">Brightness <input type="range" id="brightRng" min="-100" max="100" value="0" /></label>
+        <label class="rng">Contrast <input type="range" id="contrastRng" min="-100" max="100" value="0" /></label>
+        <label class="chk"><input type="checkbox" id="ditherChk" /> Dither (Floyd–Steinberg)</label>
+        <div class="row">
+          <button class="btn" id="applyImgBtn" disabled>Convert to current frame</button>
+        </div>
+        <p class="tiny" id="imgStatus">No image loaded.</p>
+      </section>
+
+      <section class="card">
+        <h2>Animation suggestions</h2>
+        <p class="tiny">Draw one pose, then generate frames from it. Each replaces the timeline — undo with “New” if needed.</p>
+        <div class="row wrap">
+          <button class="btn" data-suggest="idleBob">Idle bob</button>
+          <button class="btn" data-suggest="sway">Sway</button>
+          <button class="btn" data-suggest="walkStep">Walk step</button>
+          <button class="btn" data-suggest="pingpong">Ping-pong</button>
+          <button class="btn" data-suggest="flip">Flip ↔</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Export to PICO-8</h2>
+        <div class="row wrap">
+          <button class="btn" id="copyGfxBtn">Copy __gfx__</button>
+          <button class="btn" id="copyHexBtn">Copy frame hex</button>
+          <button class="btn" id="pngBtn">Download PNG sheet</button>
+        </div>
+        <textarea id="exportOut" class="export-out" readonly spellcheck="false"></textarea>
+        <p class="tiny" id="placementNotes"></p>
+      </section>
+
+      <section class="card help">
+        <h2>How PICO-8 art works</h2>
+        <p class="tiny">
+          PICO-8 stores all sprites in one <b>128×128</b> sheet of 256 tiles
+          (8×8 each). In a <code>.p8</code> file that sheet is the
+          <code>__gfx__</code> section — 128 lines of hex digits, one per pixel.
+        </p>
+        <ol class="tiny">
+          <li>Make a new <code>.p8</code> in PICO-8 (or open one).</li>
+          <li>Use <b>Copy __gfx__</b> here, then in PICO-8 press <kbd>Esc</kbd>
+              to reach the code/file, or edit the <code>.p8</code> in a text
+              editor and replace its <code>__gfx__</code> block.</li>
+          <li>Or use <b>Download PNG sheet</b> and run
+              <code>import sheet.png</code> in PICO-8.</li>
+          <li>Draw a sprite in code with <code>spr(n, x, y)</code> — the sprite
+              numbers are listed under Export above.</li>
+        </ol>
+      </section>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/palette.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/importer.js"></script>
+  <script src="js/animation.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
